@@ -32,6 +32,7 @@ flowchart LR
     TP["🖱️ Magic Trackpad"]
 
     subgraph keys ["Keyboard layer"]
+        SM["Scancode Map<br/>(Windows driver)"]
         PT["PowerToys<br/>Keyboard Manager"]
         FR["FnRow<br/>(this repo)"]
     end
@@ -41,7 +42,8 @@ flowchart LR
         TFD["ThreeFingerDrag"]
     end
 
-    KB -- "⌘ ⌃ ⌥ · Caps Lock<br/>Mac shortcuts" --> PT
+    KB -- "⌘ → Ctrl<br/>⌃ → Win" --> SM
+    SM -- "Mac shortcuts<br/>Caps Lock → Esc" --> PT
     KB -- "F1–F12 · Esc · ⌃⌘Q" --> FR
     PT -- "Ctrl / Win / Alt<br/>Home, End, Alt+Tab…" --> APPS["🪟 Windows & apps"]
     FR -- "media · volume<br/>Task View · sleep" --> APPS
@@ -72,18 +74,18 @@ Clone the repo, then run the scripts from PowerShell in the repo folder:
 git clone https://github.com/pbhusari/magic-keyboard-for-windows
 cd magic-keyboard-for-windows
 
-# ⌨️ Keyboard
-.\scripts\apply-powertoys-keymap.ps1
+# ⌨️ Keyboard (run these from an elevated PowerShell)
+.\scripts\set-scancode-map.ps1         # ⌘ -> Ctrl, ⌃ -> Win at the hardware level (restart needed)
+.\scripts\apply-powertoys-keymap.ps1   # Mac shortcuts + Caps Lock -> Esc
 .\scripts\configure-powertoys.ps1      # run as admin, no surprise auto-updates
-.\scripts\install-fnrow.ps1 -Admin     # from an elevated PowerShell; drop -Admin to run FnRow as your normal user
+.\scripts\install-fnrow.ps1 -Admin     # top row; drop -Admin to run FnRow as your normal user
 
-# 🖱️ Magic Trackpad (run the driver script in an elevated PowerShell)
+# 🖱️ Magic Trackpad (driver script needs an elevated PowerShell)
 .\scripts\install-trackpad-driver.ps1
 .\scripts\install-three-finger-drag.ps1
 .\scripts\set-touchpad-gestures.ps1
 
-# 🔓 Optional: lets ⌘L work as Ctrl+L (read the trade-off below first)
-.\scripts\free-cmd-l.ps1
+# 🔁 Restart Windows so the Scancode Map takes effect
 
 # 🥁 Just for fun
 .\scripts\trackpad-music.ps1
@@ -114,7 +116,10 @@ cd magic-keyboard-for-windows
 | <kbd>⌥ Option</kbd> | Alt |
 | <kbd>Caps Lock</kbd> | Esc |
 
-Windows' Win-key shortcuts move to <kbd>⌃</kbd>: <kbd>⌃</kbd> <kbd>.</kbd> for emoji, <kbd>⌃</kbd> <kbd>V</kbd> for clipboard history, <kbd>⌃</kbd> <kbd>D</kbd> for the desktop, <kbd>⌃</kbd> <kbd>⇧</kbd> <kbd>S</kbd> for screenshots.
+Windows' Win-key shortcuts move to <kbd>⌃</kbd>: <kbd>⌃</kbd> <kbd>.</kbd> for emoji, <kbd>⌃</kbd> <kbd>V</kbd> for clipboard history, <kbd>⌃</kbd> <kbd>D</kbd> for the desktop, <kbd>⌃</kbd> <kbd>⇧</kbd> <kbd>S</kbd> for screenshots, and <kbd>⌃</kbd> <kbd>L</kbd> to lock.
+
+> [!NOTE]
+> **Why a Scancode Map instead of PowerToys?** <kbd>⌘</kbd> is physically the Windows key, and Windows reacts to <kbd>Win</kbd> <kbd>L</kbd> before any remapper sees it. With a PowerToys-only swap, <kbd>⌘</kbd> <kbd>L</kbd> locks the PC (or hangs keyboard input if locking is turned off). `set-scancode-map.ps1` swaps the keys inside Windows' keyboard driver instead, so <kbd>⌘</kbd> <kbd>L</kbd> is a real Ctrl+L. It also gives you the Mac layout on the sign-in screen. Caps Lock → Esc stays in PowerToys, because FnRow uses the physical <kbd>Esc</kbd> key as its toggle.
 
 ### Mac shortcuts
 
@@ -189,6 +194,7 @@ The motor rings at one fixed pitch, so it plays rhythm, not melody. Songs with t
 |---|---|
 | [`powertoys/default.json`](powertoys/default.json) | PowerToys Keyboard Manager config |
 | [`fnrow/FnRow.cs`](fnrow/FnRow.cs) | FnRow source |
+| [`scripts/set-scancode-map.ps1`](scripts/set-scancode-map.ps1) | Swaps ⌘/⌃ to Ctrl/Win in Windows' keyboard driver (`-Undo` to remove) |
 | [`scripts/apply-powertoys-keymap.ps1`](scripts/apply-powertoys-keymap.ps1) | Installs the keymap and backs up yours first |
 | [`scripts/configure-powertoys.ps1`](scripts/configure-powertoys.ps1) | Runs PowerToys as admin and turns off automatic updates |
 | [`scripts/install-fnrow.ps1`](scripts/install-fnrow.ps1) | Builds and installs FnRow and starts it at login (`-Admin` to run it as administrator) |
@@ -196,7 +202,6 @@ The motor rings at one fixed pitch, so it plays rhythm, not melody. Songs with t
 | [`scripts/install-trackpad-driver.ps1`](scripts/install-trackpad-driver.ps1) | Verifies and installs Apple's precision trackpad driver |
 | [`scripts/install-three-finger-drag.ps1`](scripts/install-three-finger-drag.ps1) | Verifies and installs ThreeFingerDragOnWindows |
 | [`scripts/set-touchpad-gestures.ps1`](scripts/set-touchpad-gestures.ps1) | Applies the gestures and taps above |
-| [`scripts/free-cmd-l.ps1`](scripts/free-cmd-l.ps1) | Lets ⌘L reach apps (`-Undo` to revert) |
 | [`scripts/release-stuck-keys.ps1`](scripts/release-stuck-keys.ps1) | Fixes garbled typing from a stuck modifier |
 | [`scripts/trackpad-music.ps1`](scripts/trackpad-music.ps1) | Plays drum beats on the trackpad's haptic motor |
 
@@ -205,11 +210,11 @@ The motor rings at one fixed pitch, so it plays rhythm, not melody. Songs with t
 ## ⚠️ Known limitations
 
 <details>
-<summary><b>⌘L locks the PC</b></summary>
+<summary><b>The Scancode Map applies to every keyboard</b></summary>
 
 <br>
 
-<kbd>⌘</kbd> is physically the Win key, and Windows handles <kbd>Win</kbd> <kbd>L</kbd> before any remapper sees it. `free-cmd-l.ps1` fixes this by turning off the lock shortcut everywhere. Use <kbd>⌃</kbd> <kbd>⌘</kbd> <kbd>Q</kbd> (sleep) as your lock instead, and set *Settings → Accounts → Sign-in options* to require sign-in when the PC wakes up from sleep.
+It works at the driver level, so a regular PC keyboard plugged into the same machine also gets Ctrl and Win swapped. Remove it with `.\scripts\set-scancode-map.ps1 -Undo` and restart.
 
 </details>
 
@@ -218,7 +223,7 @@ The motor rings at one fixed pitch, so it plays rhythm, not melody. Songs with t
 
 <br>
 
-The keyboard handles them internally and sends Windows nothing, so no software can remap them. Use <kbd>⌃</kbd> <kbd>.</kbd> for emoji and <kbd>⌃</kbd> <kbd>⌘</kbd> <kbd>Q</kbd> to sleep.
+Windows never receives them as keystrokes. Testing found nothing on the keyboard's readable data channels, nothing in its battery channel (read through WinUSB), and nothing as normal key events. They're most likely inside the main keyboard report, which only a signed kernel driver can read. Use <kbd>⌃</kbd> <kbd>.</kbd> for emoji, <kbd>⌃</kbd> <kbd>L</kbd> to lock, and <kbd>⌃</kbd> <kbd>⌘</kbd> <kbd>Q</kbd> to sleep.
 
 </details>
 

@@ -1,7 +1,4 @@
 {"remapKeys":{"inProcess":[
-{"originalKeys":"91","newRemapKeys":"162"},
-{"originalKeys":"92","newRemapKeys":"163"},
-{"originalKeys":"162","newRemapKeys":"91"},
 {"originalKeys":"20","newRemapKeys":"27"}
 ]},
 "remapKeysToText":{"inProcess":[]},
