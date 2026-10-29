@@ -2,6 +2,8 @@
 // Media mode: F1-F12 do what their icons show. F-key mode: plain F1-F12.
 // The physical Esc key toggles between the two (Caps Lock stays Escape via PowerToys).
 // Holding any modifier always sends the plain F-key (so Alt+F4 etc. still work).
+// Easter egg: type the Konami code (up up down down left right left right B A) and the
+// Magic Trackpad's haptic motor taps out "shave and a haircut... two bits".
 // No network access, no files written. Quit from the tray icon.
 using System;
 using System.Collections.Generic;
@@ -104,6 +106,7 @@ static class FnRow
             // Only physical keys; Caps Lock arrives here as an injected Esc from PowerToys and passes through.
             if ((k.flags & LLKHF_INJECTED) == 0)
             {
+                if (down) Konami(k.vk);
                 if (k.vk == 0x1B)
                 {
                     if (down)
@@ -136,6 +139,20 @@ static class FnRow
             }
         }
         return CallNextHookEx(hook, code, wParam, lParam);
+    }
+
+    // Only remembers how far into the code you are; keys always pass through untouched.
+    static readonly uint[] konamiCode = { 0x26, 0x26, 0x28, 0x28, 0x25, 0x27, 0x25, 0x27, 0x42, 0x41 };
+    static int konamiPos;
+
+    static void Konami(uint vk)
+    {
+        if (vk == konamiCode[konamiPos]) konamiPos++;
+        else konamiPos = vk == konamiCode[0] ? 1 : 0;
+        if (konamiPos < konamiCode.Length) return;
+        konamiPos = 0;
+        ui.Post(_ => osd.Flash("♪ two bits! ♪"), null);
+        new Thread(Trackpad.ShaveAndAHaircut) { IsBackground = true }.Start();
     }
 
     // Holding brightness or volume keeps stepping, like on a Mac.
@@ -233,6 +250,78 @@ static class Brightness
             return true;
         }, IntPtr.Zero);
         return shown;
+    }
+}
+
+// Magic Trackpad haptic actuator: output report 0x53 on the trackpad's vendor interface 2.
+// Mixing the sharp "click" and deep "thud" parts of each pulse gives different drum sounds.
+static class Trackpad
+{
+    [StructLayout(LayoutKind.Sequential)] struct SP_DEVICE_INTERFACE_DATA { public uint cbSize; public Guid g; public uint flags; public IntPtr r; }
+    [DllImport("hid.dll")] static extern void HidD_GetHidGuid(out Guid g);
+    [DllImport("setupapi.dll", CharSet = CharSet.Unicode)] static extern IntPtr SetupDiGetClassDevs(ref Guid g, string e, IntPtr h, uint f);
+    [DllImport("setupapi.dll")] static extern bool SetupDiEnumDeviceInterfaces(IntPtr s, IntPtr d, ref Guid g, uint i, ref SP_DEVICE_INTERFACE_DATA x);
+    [DllImport("setupapi.dll", CharSet = CharSet.Unicode)] static extern bool SetupDiGetDeviceInterfaceDetail(IntPtr s, ref SP_DEVICE_INTERFACE_DATA x, IntPtr buf, uint size, out uint req, IntPtr d);
+    [DllImport("setupapi.dll")] static extern bool SetupDiDestroyDeviceInfoList(IntPtr s);
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)] static extern Microsoft.Win32.SafeHandles.SafeFileHandle CreateFile(string n, uint a, uint s, IntPtr sec, uint c, uint f, IntPtr t);
+    [DllImport("kernel32.dll", SetLastError = true)] static extern bool WriteFile(Microsoft.Win32.SafeHandles.SafeFileHandle h, byte[] b, int n, out int w, IntPtr o);
+
+    static string FindActuator()
+    {
+        Guid g; HidD_GetHidGuid(out g);
+        IntPtr set = SetupDiGetClassDevs(ref g, null, IntPtr.Zero, 0x12);
+        try
+        {
+            var d = new SP_DEVICE_INTERFACE_DATA(); d.cbSize = (uint)Marshal.SizeOf(d);
+            for (uint i = 0; SetupDiEnumDeviceInterfaces(set, IntPtr.Zero, ref g, i, ref d); i++)
+            {
+                uint req; SetupDiGetDeviceInterfaceDetail(set, ref d, IntPtr.Zero, 0, out req, IntPtr.Zero);
+                IntPtr buf = Marshal.AllocHGlobal((int)req);
+                Marshal.WriteInt32(buf, IntPtr.Size == 8 ? 8 : 6);
+                string path = SetupDiGetDeviceInterfaceDetail(set, ref d, buf, req, out req, IntPtr.Zero)
+                    ? Marshal.PtrToStringUni(new IntPtr(buf.ToInt64() + 4)) : "";
+                Marshal.FreeHGlobal(buf);
+                string p = path.ToLowerInvariant();
+                if (p.Contains("vid_05ac") && (p.Contains("pid_0324") || p.Contains("pid_0265")) && p.Contains("mi_02")) return path;
+            }
+            return null;
+        }
+        finally { SetupDiDestroyDeviceInfoList(set); }
+    }
+
+    static void Hit(Microsoft.Win32.SafeHandles.SafeFileHandle h, byte strength, byte sharp, byte deep)
+    {
+        var b = new byte[64];
+        var t = new byte[] { 0x53, 0x01, strength, 0x78, 0x02, sharp, 0x24, 0x30, 0x06, 0x01, deep, 0x18, 0x48, 0x12 };
+        Array.Copy(t, b, t.Length);
+        int w; WriteFile(h, b, b.Length, out w, IntPtr.Zero);
+    }
+
+    public static void ShaveAndAHaircut()
+    {
+        string path = FindActuator();
+        if (path == null) return;
+        using (var h = CreateFile(path, 0xC0000000, 3, IntPtr.Zero, 3, 0, IntPtr.Zero))
+        {
+            if (h.IsInvalid) return;
+            // kick, snare, hat, hat, snare, (rest) ... kick, crash: 120 BPM
+            var voices = "kshhsk..cc";
+            var beats = new[] { 1.0, 0.5, 0.5, 1, 1, 2, 0, 0, 1, 1 };
+            var clock = System.Diagnostics.Stopwatch.StartNew(); double at = 0;
+            for (int i = 0; i < voices.Length; i++)
+            {
+                if (voices[i] == '.') continue;
+                while (clock.Elapsed.TotalMilliseconds < at) Thread.Sleep(1);
+                switch (voices[i])
+                {
+                    case 'k': Hit(h, 0x34, 0x02, 0x40); break;
+                    case 's': Hit(h, 0x2C, 0x20, 0x0A); break;
+                    case 'h': Hit(h, 0x10, 0x12, 0x00); break;
+                    case 'c': Hit(h, 0x40, 0x20, 0x40); break;
+                }
+                at += beats[i] * 500;
+            }
+        }
     }
 }
 

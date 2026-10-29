@@ -74,7 +74,8 @@ cd magic-keyboard-for-windows
 
 # ⌨️ Keyboard
 .\scripts\apply-powertoys-keymap.ps1
-.\scripts\install-fnrow.ps1
+.\scripts\configure-powertoys.ps1      # run as admin, no surprise auto-updates
+.\scripts\install-fnrow.ps1 -Admin     # from an elevated PowerShell; drop -Admin to run FnRow as your normal user
 
 # 🖱️ Magic Trackpad (run the driver script in an elevated PowerShell)
 .\scripts\install-trackpad-driver.ps1
@@ -83,7 +84,15 @@ cd magic-keyboard-for-windows
 
 # 🔓 Optional: lets ⌘L work as Ctrl+L (read the trade-off below first)
 .\scripts\free-cmd-l.ps1
+
+# 🥁 Just for fun
+.\scripts\trackpad-music.ps1
 ```
+
+> [!IMPORTANT]
+> **Why run as admin?** Windows blocks normal programs from sending keys into admin windows (Task Manager, admin terminals, installers). Running PowerToys and FnRow as administrator lets your remaps work everywhere. Both start at login from Task Scheduler, so there's no UAC prompt each time.
+>
+> **Why no auto-updates?** A PowerToys update restarts it, and a restart while a key is held can leave Ctrl stuck. With auto-download off, PowerToys still tells you when an update exists, but only installs it when you choose to.
 
 > [!TIP]
 > If Windows blocks the scripts, start PowerShell with `powershell -ExecutionPolicy Bypass`.
@@ -142,8 +151,9 @@ The Magic Keyboard sends plain F1–F12 to Windows. **FnRow** is a small backgro
 | <kbd>Esc</kbd> | | **Switch between media keys and F1–F12** |
 
 - Holding any modifier sends the plain F-key, so <kbd>⌥</kbd> <kbd>F4</kbd> still closes windows.
-- FnRow is compiled on your machine by the C# compiler that ships with Windows. It has no network code, writes no files, runs as your user (not admin), and reacts only to <kbd>Esc</kbd>, F1–F12 and <kbd>⌃</kbd> <kbd>⌘</kbd> <kbd>Q</kbd>.
-- It starts at login. Quit it from its tray icon, or remove it with `.\scripts\uninstall-fnrow.ps1`.
+- FnRow is compiled on your machine by the C# compiler that ships with Windows. It has no network code and writes no files. It only acts on <kbd>Esc</kbd>, F1–F12 and <kbd>⌃</kbd> <kbd>⌘</kbd> <kbd>Q</kbd>; every other key passes straight through.
+- With `-Admin` it starts at login as administrator (Task Scheduler task **FnRow**) so it also works in admin windows; without it, it starts as your normal user. Quit it from its tray icon, or remove it with `.\scripts\uninstall-fnrow.ps1`.
+- 🎮 There may be a little something hidden in it for people who remember their cheat codes. You'll need the trackpad plugged in.
 
 ---
 
@@ -161,6 +171,16 @@ The Magic Keyboard sends plain F1–F12 to Windows. **FnRow** is a small backgro
 
 Touchpad sensitivity is set to *Most sensitive*, so holding keys (like WASD in games) doesn't lock the touchpad.
 
+### 🥁 Trackpad drum machine
+
+The Magic Trackpad doesn't physically click; a haptic motor fakes it. `trackpad-music.ps1` drives that motor directly (USB interface 2, output report `0x53`), mixing each pulse's sharp *click* and deep *thud* into kick, snare, hi-hat, tom and crash sounds.
+
+```powershell
+.\scripts\trackpad-music.ps1 -Song sailor   # shave | groove | sailor | engine
+```
+
+The motor rings at one fixed pitch, so it plays rhythm, not melody. Songs with tunes are played as rhythm, with low notes as thuds and high notes as clicks. Haptic report format from community reverse-engineering (see Credits).
+
 ---
 
 ## 📁 What's in the repo
@@ -170,13 +190,15 @@ Touchpad sensitivity is set to *Most sensitive*, so holding keys (like WASD in g
 | [`powertoys/default.json`](powertoys/default.json) | PowerToys Keyboard Manager config |
 | [`fnrow/FnRow.cs`](fnrow/FnRow.cs) | FnRow source |
 | [`scripts/apply-powertoys-keymap.ps1`](scripts/apply-powertoys-keymap.ps1) | Installs the keymap and backs up yours first |
-| [`scripts/install-fnrow.ps1`](scripts/install-fnrow.ps1) | Builds and installs FnRow, and runs it at login |
+| [`scripts/configure-powertoys.ps1`](scripts/configure-powertoys.ps1) | Runs PowerToys as admin and turns off automatic updates |
+| [`scripts/install-fnrow.ps1`](scripts/install-fnrow.ps1) | Builds and installs FnRow and starts it at login (`-Admin` to run it as administrator) |
 | [`scripts/uninstall-fnrow.ps1`](scripts/uninstall-fnrow.ps1) | Removes FnRow |
 | [`scripts/install-trackpad-driver.ps1`](scripts/install-trackpad-driver.ps1) | Verifies and installs Apple's precision trackpad driver |
 | [`scripts/install-three-finger-drag.ps1`](scripts/install-three-finger-drag.ps1) | Verifies and installs ThreeFingerDragOnWindows |
 | [`scripts/set-touchpad-gestures.ps1`](scripts/set-touchpad-gestures.ps1) | Applies the gestures and taps above |
 | [`scripts/free-cmd-l.ps1`](scripts/free-cmd-l.ps1) | Lets ⌘L reach apps (`-Undo` to revert) |
 | [`scripts/release-stuck-keys.ps1`](scripts/release-stuck-keys.ps1) | Fixes garbled typing from a stuck modifier |
+| [`scripts/trackpad-music.ps1`](scripts/trackpad-music.ps1) | Plays drum beats on the trackpad's haptic motor |
 
 ---
 
@@ -223,7 +245,7 @@ Ctrl+Tab, Ctrl+Space, Ctrl+arrows, Ctrl+[ / ] and Alt+← / → now do their Mac
 
 <br>
 
-PowerToys can't remap keys in apps running as administrator unless PowerToys itself runs as administrator.
+Windows blocks normal programs from sending keys to apps running as administrator. Run `configure-powertoys.ps1` and `install-fnrow.ps1 -Admin` so both run as administrator and work everywhere.
 
 </details>
 
@@ -252,6 +274,7 @@ Apple's driver doesn't list the A3120, so the script force-installs it, the same
 - [Microsoft PowerToys](https://github.com/microsoft/PowerToys) for Keyboard Manager
 - Apple's Boot Camp precision trackpad driver, re-hosted by [lc700x/MagicTrackPad2_Windows_Precision_Drivers](https://github.com/lc700x/MagicTrackPad2_Windows_Precision_Drivers)
 - [ClementGre/ThreeFingerDragOnWindows](https://github.com/ClementGre/ThreeFingerDragOnWindows) for three-finger drag
+- Haptic actuator report format from [knespii/Magic-TP-extended](https://github.com/knespii/Magic-TP-extended) and [vitoplantamura/MagicTrackpad2ForWindows](https://github.com/vitoplantamura/MagicTrackpad2ForWindows)
 
 <div align="center">
 
