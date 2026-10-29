@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 210" width="760" height="210" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <title>Magic Keyboard bottom row and what each key does on Windows</title>
+  <rect x="0" y="0" width="760" height="210" rx="18" fill="#f6f7f9"/>
+  <rect x="16" y="16" width="728" height="122" rx="14" fill="#e4e6ea"/>
+
+  <!-- fn / globe -->
+  <g>
+    <rect x="32" y="32" width="92" height="90" rx="10" fill="#ffffff" stroke="#c9ccd2"/>
+    <text x="44" y="56" font-size="15" fill="#3a3d44">fn</text>
+    <text x="78" y="108" font-size="22" text-anchor="middle" fill="#3a3d44">&#127760;</text>
+    <text x="78" y="166" font-size="14" text-anchor="middle" fill="#8a8f98">not visible</text>
+    <text x="78" y="184" font-size="14" text-anchor="middle" fill="#8a8f98">to Windows</text>
+  </g>
+
+  <!-- control -->
+  <g>
+    <rect x="136" y="32" width="92" height="90" rx="10" fill="#ffffff" stroke="#c9ccd2"/>
+    <text x="148" y="58" font-size="20" fill="#3a3d44">&#8963;</text>
+    <text x="148" y="108" font-size="14" fill="#3a3d44">control</text>
+    <rect x="146" y="152" width="72" height="30" rx="15" fill="#0078d4"/>
+    <text x="182" y="172" font-size="15" font-weight="600" text-anchor="middle" fill="#ffffff">Win</text>
+  </g>
+
+  <!-- option -->
+  <g>
+    <rect x="240" y="32" width="92" height="90" rx="10" fill="#ffffff" stroke="#c9ccd2"/>
+    <text x="252" y="58" font-size="20" fill="#3a3d44">&#8997;</text>
+    <text x="252" y="108" font-size="14" fill="#3a3d44">option</text>
+    <rect x="250" y="152" width="72" height="30" rx="15" fill="#5c2d91"/>
+    <text x="286" y="172" font-size="15" font-weight="600" text-anchor="middle" fill="#ffffff">Alt</text>
+  </g>
+
+  <!-- command -->
+  <g>
+    <rect x="344" y="32" width="118" height="90" rx="10" fill="#ffffff" stroke="#c9ccd2"/>
+    <text x="448" y="58" font-size="20" text-anchor="end" fill="#3a3d44">&#8984;</text>
+    <text x="448" y="108" font-size="14" text-anchor="end" fill="#3a3d44">command</text>
+    <rect x="367" y="152" width="72" height="30" rx="15" fill="#107c10"/>
+    <text x="403" y="172" font-size="15" font-weight="600" text-anchor="middle" fill="#ffffff">Ctrl</text>
+  </g>
+
+  <!-- space -->
+  <g>
+    <rect x="474" y="32" width="254" height="90" rx="10" fill="#ffffff" stroke="#c9ccd2"/>
+    <text x="601" y="172" font-size="14" text-anchor="middle" fill="#8a8f98">&#8984; + space = Command Palette</text>
+  </g>
+</svg>
